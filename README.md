@@ -195,23 +195,36 @@ Full guide: [`docs/context-management.md`](docs/context-management.md)
 
 ---
 
-## Templates and skills
+## Quick start
 
-```bash
-# Install skills
-cp -r .claude/skills/ your-project/.claude/skills/
+Copy this prompt into Claude Code in your project:
 
-# Copy config
-cp .claude/settings.json your-project/.claude/settings.json
+```
+Set up claude-code-best-practices in this repo.
 
-# Write your AI_INDEX
-cp templates/AI_INDEX_TEMPLATE.md your-project/AI_INDEX.md
+Read these files from https://github.com/ithiria894/claude-code-best-practices:
+- README.md (understand the system)
+- .claude/skills/investigate-module/SKILL.md
+- .claude/skills/trace-impact/SKILL.md
+- templates/AI_INDEX_TEMPLATE.md
+- CLAUDE.md
 
-# Add to your CLAUDE.md
-# → copy the <investigate_before_answering> block from CLAUDE.md
+Then:
+1. Install both skills into this project's .claude/skills/
+2. Enable LSP in .claude/settings.json (add ENABLE_LSP_TOOL: "1")
+3. Install the language server for this project's stack
+4. Write an AI_INDEX.md for this codebase using the template format — routing manifest only, no explanations
+5. Add the <investigate_before_answering> XML block to this project's CLAUDE.md
+6. Explain what you've set up and how to use /investigate-module and /trace-impact
+
+Do not implement anything else. Just set up the navigation system and explain it.
 ```
 
-| Template | What it is |
+---
+
+## Templates and config
+
+| File | What it is |
 |---|---|
 | [`templates/AI_INDEX_TEMPLATE.md`](templates/AI_INDEX_TEMPLATE.md) | Full AI_INDEX format with Connects to |
 | [`templates/MEMORY_INDEX_TEMPLATE.md`](templates/MEMORY_INDEX_TEMPLATE.md) | Memory file structure and frontmatter |
