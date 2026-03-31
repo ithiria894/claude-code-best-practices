@@ -79,13 +79,11 @@ See [`templates/AI_INDEX_TEMPLATE.md`](templates/AI_INDEX_TEMPLATE.md).
 
 ---
 
-## LSP — not grep
+## LSP — the search engine for the graph
 
-You ask Claude to find every place a function is called. It uses grep. Sounds fine.
+BFS needs precise lookups at each node. grep can't do this — it's string matching, so `authenticate` matches comments, variable names, and unrelated files. 40 results, 15 noise, half your token budget gone.
 
-But grep is string matching — it finds those letters anywhere they appear. Comments. Variable names that happen to contain the string. Files from a completely unrelated part of the codebase. You ask for callers of `authenticate()` and get 40 results. 15 are noise. Claude reads all 40. Half your token budget gone before you've made a single change.
-
-LSP asks the language's type checker instead. It knows what the symbol actually *is*, not just where the letters appear. Same query, 6 exact results. The real callers, nothing else.
+LSP asks the language's type checker directly. Semantic, not string. Same query, 6 exact results.
 
 | | grep | LSP findReferences |
 |---|---|---|
@@ -98,9 +96,7 @@ Enable in `.claude/settings.json`:
 { "env": { "ENABLE_LSP_TOOL": "1" } }
 ```
 
-**VS Code extension vs terminal — it matters here.** If you're using Claude Code inside VS Code, the language servers are already running — VS Code starts them for you (tsserver for TypeScript, Pylance for Python, etc.). Just enable the flag and LSP works immediately.
-
-If you're using Claude Code in a terminal, you need to install the language servers yourself:
+**VS Code**: language servers already running — just enable the flag. **Terminal**: install the server for your language first:
 
 ```bash
 pip install python-lsp-server                         # Python
@@ -108,47 +104,37 @@ npm install -g typescript-language-server typescript  # TypeScript
 go install golang.org/x/tools/gopls@latest            # Go
 ```
 
-Bottom line: VS Code gives you LSP for free. Terminal requires one install step. Either way, enable the flag.
-
 ---
 
 ## The three skills
 
-**`/generate-index`** — build the map
+**`/generate-index`** — build the graph automatically
 
-You can write AI_INDEX.md by hand, but for any repo with more than a handful of files, just run `/generate-index`. It scans your source directory, finds every import between files, and outputs the routing manifest with all the `Connects to` edges already filled in. Then it reviews the output — adds HTTP endpoints, merges domains that should be together, trims noise.
+Scans your imports, directory structure, and exported symbols. Outputs the full AI_INDEX.md with all `Connects to` edges filled in from actual import statements. Deterministic — 80% of the graph is built with zero tokens. Claude refines the last 20% (HTTP endpoints, frontend-backend connections the script can't see).
 
-Run it once when you set up a new repo, then again whenever your directory structure changes.
-
----
-
-**`/investigate-module`** — before Claude answers, make it read first
-
-You ask Claude about a module. It gives you a detailed explanation. Sounds right. But half of it is wrong — Claude was filling gaps from training data instead of reading your actual code. By the time you find out, you've already built on top of the wrong assumption.
-
-`/investigate-module` forces Claude to ground its answer before saying anything. It reads AI_INDEX to find the right domain → uses grep/LSP to locate the exact file and function → reads only the relevant lines → tells you exactly what it read so you can verify. If it can't find something, it says uncertain. It doesn't guess.
-
-Use it whenever you're asking about a module you haven't looked at in this session.
+Run once on a new repo. Re-run when the structure changes.
 
 ---
 
-**`/trace-impact`** — before you change anything, find out what breaks
+**`/investigate-module`** — verification-first prompting
 
-You change a function. Tests pass. You ship. Then you find out three services called that function, a frontend type depended on its return shape, and a test mock was hardcoded to its old behavior. None of this was obvious. Claude didn't warn you because you didn't ask, and Claude doesn't know what it doesn't know.
+The key mechanism: **forces Claude to name the exact file and function it read before making any claim.** This eliminates the middle ground of confident fabrication — Claude either reads the source (and is accurate) or says "uncertain" (and you know to dig deeper).
 
-`/trace-impact` maps every affected place before you touch anything. It works like a breadth-first search through your codebase:
+Reads AI_INDEX to find the right node → grep/LSP to locate the exact symbol → reads only the relevant lines → reports what it read so you can verify.
 
-- Start at the symbol you're changing
-- Level 1: everything that directly calls it (LSP findReferences — semantic, not grep)
-- Level 2: everything that calls those callers
-- Cross-domain: follows AI_INDEX `Connects to` to catch paths that jump module boundaries
-- Tests: finds every test that covers anything in the affected set
+---
 
-Why breadth-first? Because you want to see all the direct impact first, before going deeper. It's systematic — nothing slips through because you happened to trace one branch before another. Stops at API boundaries so it doesn't spiral forever.
+**`/trace-impact`** — BFS traversal on the graph
 
-Result: a list of what must change, what might need updating, and which tests to run — before you write a single line.
+This is where the graph pays off. Instead of hoping you remembered every caller, `/trace-impact` does a systematic breadth-first search on the AI_INDEX adjacency list:
 
-Use it before every non-trivial change.
+- **Level 0**: the node you're changing
+- **Level 1**: direct callers (LSP findReferences — semantic, not grep)
+- **Level 2**: callers of those callers
+- **Cross-domain**: follows `Connects to` edges across module boundaries
+- **Tests**: every test covering the affected set
+
+Breadth-first so you see all direct impact before going deeper. Stops at API boundaries. Nothing slips through.
 
 ---
 
@@ -175,13 +161,9 @@ Add a feature:
 
 ---
 
-## CLAUDE.md — why "be careful" doesn't work
+## CLAUDE.md — XML tags, not markdown
 
-You add a rule to CLAUDE.md: "Always verify against source code before answering." Claude ignores it two messages later. You bold it. Still ignored. You move it to the top. Better, but still inconsistent.
-
-It's not Claude ignoring you on purpose. Anthropic wraps your CLAUDE.md with: *"this context may or may not be relevant."* Under context pressure, markdown headings get deprioritized. Your rules are there — they're just losing the competition.
-
-XML tags survive context pressure better than any markdown formatting. Use those instead:
+Rules in CLAUDE.md get deprioritized under context pressure — Anthropic wraps them with *"this context may or may not be relevant."* XML tags survive this better:
 
 ```xml
 <investigate_before_answering>
@@ -195,9 +177,9 @@ Read each file once. No redundant reads.
 </investigate_before_answering>
 ```
 
-Also: Claude has roughly 150–200 instruction slots total. The system prompt uses ~50. Every bullet in your CLAUDE.md is one slot. When it fills up, all rules degrade simultaneously — not just the ones at the bottom. Keep it under 200 lines.
+**Instruction budget:** ~150–200 slots total. System prompt uses ~50. Every bullet in CLAUDE.md is one slot. Over budget = all rules degrade simultaneously. Keep it under 200 lines.
 
-And if you catch yourself writing "NEVER do X" in CLAUDE.md — move it to `settings.json` deny. CLAUDE.md can be overridden under pressure. `settings.json` deny cannot:
+**Hard rules → `settings.json` deny**, not CLAUDE.md. CLAUDE.md can be overridden under pressure. Deny rules cannot:
 
 ```json
 {
@@ -212,28 +194,21 @@ And if you catch yourself writing "NEVER do X" in CLAUDE.md — move it to `sett
 
 ---
 
-## Autonomy — the one rule
+## Autonomy — reversibility, not action type
 
-Claude asks "should I proceed?" before editing a file. Before running a test. Before grep. You spend half your time confirming things that obviously don't need confirming.
+**Never ask:** edit files, run tests, grep, git add, git commit on feature branch — all reversible.
+**Always ask:** push to remote, publish, delete files, force operations — irreversible or visible to others.
 
-But if you say "just do everything without asking," Claude will also push to remote and delete files without asking.
-
-The only rule that actually works: **judge by reversibility, not by action type.**
-
-Editing files, running tests, grep, git add, git commit on a feature branch — all reversible, never ask. Push to remote, publish packages, deleting files, force operations, sending messages externally — irreversible or visible to others, always ask.
-
-On a feature branch, everything up to and including commit is reversible. Push is the line.
+Push is the line.
 
 ---
 
 ## Context management
 
-A session starts sharp. An hour in, Claude starts making mistakes it wouldn't have made at the start — forgetting earlier constraints, giving vaguer answers. The context window is filling up, and performance degrades as it fills.
-
-- **`/clear` between unrelated tasks** — the previous task's file reads and reasoning pollute the next one
-- **`/compact focus on X`** — compact with a hint so the relevant parts survive, not everything equally
-- **Write state to `PLAN.md`** — progress survives a `/clear`; conversation history doesn't
-- **One major task per session** — each fresh start is full performance
+- **`/clear` between unrelated tasks** — context residue degrades the next task
+- **`/compact focus on X`** — directed compaction, not blind
+- **Write state to `PLAN.md`** — survives `/clear`; conversation history doesn't
+- **One major task per session** — fresh start = full performance
 
 Full guide: [`docs/context-management.md`](docs/context-management.md)
 
