@@ -57,13 +57,7 @@ The `Connects to` part matters a lot. When you're tracing what breaks after a ch
 
 One thing to keep in mind: the moment this file starts explaining *how* things work instead of *where* they are, Claude will start reasoning from the index instead of reading the actual code. That's where the confident wrong answers come from. Keep it under 250 lines, file paths and keywords only.
 
-**Generating it:** You don't have to write this by hand. The repo includes a script that scans your imports and directory structure and outputs the whole thing:
-
-```bash
-node scripts/generate-ai-index.mjs src tests > AI_INDEX.md
-```
-
-It finds entry files, extracts exported symbols as search terms, and maps cross-domain connections from actual imports. Gets you 80% of the way there — then you review and add anything it missed (like HTTP endpoints or frontend-backend connections).
+**Generating it:** You don't have to write this by hand. Just run `/generate-index` — it scans your imports, directory structure, and exported symbols, then outputs the whole AI_INDEX.md with all the `Connects to` edges filled in. Review the output, add anything it missed (like HTTP endpoints or frontend-backend connections), done.
 
 **Keeping it fresh:** A stale map is worse than no map — Claude trusts it and follows dead paths. After every bug fix or feature that changes the structure (new modules, renamed files, new cross-domain connections), re-run the generator or update the affected entries manually. You can enforce this with a CLAUDE.md rule, a pre-commit hook, or just discipline — pick whatever works for your team.
 
@@ -108,13 +102,7 @@ Bottom line: VS Code gives you LSP for free. Terminal requires one install step.
 
 **`/generate-index`** — build the map
 
-You can write AI_INDEX.md by hand, but for any repo with more than a handful of files, let the script do the heavy lifting. It scans your source directory, finds every import between files, and outputs the routing manifest with all the `Connects to` edges already filled in.
-
-```bash
-node scripts/generate-ai-index.mjs src tests > AI_INDEX.md
-```
-
-Then Claude reviews the output — adds HTTP endpoints, merges domains that should be together, trims noise. Script does 80% deterministically (zero tokens). Claude refines the last 20%.
+You can write AI_INDEX.md by hand, but for any repo with more than a handful of files, just run `/generate-index`. It scans your source directory, finds every import between files, and outputs the routing manifest with all the `Connects to` edges already filled in. Then it reviews the output — adds HTTP endpoints, merges domains that should be together, trims noise.
 
 Run it once when you set up a new repo, then again whenever your directory structure changes.
 
