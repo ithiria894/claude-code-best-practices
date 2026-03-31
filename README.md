@@ -16,6 +16,25 @@ Here's how to fix it.
 
 ---
 
+## The core insight
+
+The bottleneck for AI coding assistants isn't intelligence — it's navigation. Claude can reason well once it has the right information. The problem is it wastes most of its capacity *finding* that information.
+
+Three skills solve this:
+
+```
+/generate-index          → build the map (deterministic script + Claude refine)
+        ↓
+    AI_INDEX.md          → the map itself (routing manifest with Connects to edges)
+        ↓
+/investigate-module      → read a specific node on the map (grounded, with sources)
+/trace-impact            → BFS along the edges (find everything affected by a change)
+```
+
+The map is a web of every domain in your codebase and how they connect. Drop a bug or a feature request anywhere on that web, and the system traces every path that's affected — before you write a single line of code.
+
+---
+
 ## AI_INDEX.md — give Claude a map
 
 Every new session, you spend 10 minutes re-orienting Claude. "The auth logic is in... the routes are in... the models are..." Claude asks questions it shouldn't have to ask. It reads the wrong files. It explains code it hasn't even opened.
@@ -45,6 +64,8 @@ node scripts/generate-ai-index.mjs src tests > AI_INDEX.md
 ```
 
 It finds entry files, extracts exported symbols as search terms, and maps cross-domain connections from actual imports. Gets you 80% of the way there — then you review and add anything it missed (like HTTP endpoints or frontend-backend connections).
+
+**Keeping it fresh:** A stale map is worse than no map — Claude trusts it and follows dead paths. After every bug fix or feature that changes the structure (new modules, renamed files, new cross-domain connections), re-run the generator or update the affected entries manually. You can enforce this with a CLAUDE.md rule, a pre-commit hook, or just discipline — pick whatever works for your team.
 
 See [`templates/AI_INDEX_TEMPLATE.md`](templates/AI_INDEX_TEMPLATE.md).
 

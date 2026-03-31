@@ -16,6 +16,25 @@
 
 ---
 
+## 核心洞察
+
+AI coding assistant 的瓶頸不是智慧——是導航。Claude 拿到正確的資訊後推理得很好。問題是它把大部分能力浪費在「找資訊」這件事上。
+
+三個技能解決這個問題：
+
+```
+/generate-index          → 建立地圖（deterministic script + Claude 精修）
+        ↓
+    AI_INDEX.md          → 地圖本身（routing manifest，有 Connects to edges）
+        ↓
+/investigate-module      → 讀地圖上的某個節點（有根據，有來源）
+/trace-impact            → 沿著 edges 做 BFS（找出所有受影響的位置）
+```
+
+地圖是一張網——你的程式碼庫裡每個域以及它們之間的連接。在這張網的任何一個點丟入一個 bug 或 feature 需求，系統就沿著所有路徑追蹤出受影響的位置——在你寫下第一行改動之前。
+
+---
+
 ## AI_INDEX.md — 給 Claude 一張地圖
 
 每次開新的 session，你都要花 10 分鐘重新幫 Claude 定位。「auth 邏輯在這裡、API routes 在那裡、資料庫 model 在...」Claude 問出根本不需要問的問題，讀了不相關的檔案，然後對它根本沒開過的程式碼侃侃而談。
@@ -45,6 +64,8 @@ node scripts/generate-ai-index.mjs src tests > AI_INDEX.md
 ```
 
 它會找到 entry files、從 exports 提取搜尋關鍵字、從 actual imports 建立跨域連接。80% 的工作 deterministic 完成——然後你 review 一下，加上它漏掉的部分（例如 HTTP endpoints 或前後端的連接）。
+
+**保持新鮮度：** 過時的地圖比沒有地圖更危險——Claude 會信任它然後走上死路。每次修完 bug 或加完 feature，如果結構有變（新 module、改名的檔案、新的跨域連接），就重跑 generator 或手動更新受影響的條目。你可以用 CLAUDE.md 規則、pre-commit hook、或者靠紀律來 enforce——看你的團隊適合哪種。
 
 參考：[`templates/AI_INDEX_TEMPLATE.md`](templates/AI_INDEX_TEMPLATE.md)
 
