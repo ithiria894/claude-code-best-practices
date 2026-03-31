@@ -2,49 +2,29 @@
 
 [繁體中文](README.zh-TW.md)
 
-You ask Claude about a function. It explains it confidently and in detail.
+You ask Claude about a function. It gives you a confident, detailed explanation.
 
-You build on that explanation for an hour.
-
-Then you find out it was wrong.
+You build on it for an hour. Then you find out it was wrong.
 
 ---
 
-Or this one: you change a function, Claude helps you finish it, tests pass, you ship. Three days later someone in code review points out that four other places call that function — and they're all broken now. Claude never mentioned them. You didn't know to ask.
+Or this one: you change a function, Claude helps you finish it, tests pass, you ship. Three days later in code review someone says "hey, four other places call this function — they're all broken." Claude never mentioned them. You didn't know to ask.
 
-These aren't edge cases. They happen constantly on real codebases. And they share one root cause: **Claude doesn't have a reliable way to navigate your codebase.** It reads too little and guesses, or reads too much and burns all your tokens before getting to the actual work.
+This happens all the time on real projects. Same root cause every time: **Claude doesn't have a way to navigate your codebase.** It reads too little and guesses, or reads too much and burns your tokens before getting to the actual work.
 
-This repo fixes that.
-
----
-
-## The fix: give Claude a navigation system
-
-The core idea is simple: Claude doesn't just need your source code. It needs a navigation system — a way to know where to look, how to get there efficiently, and what connects to what.
-
-Three things work together to build that:
+Here's how to fix it.
 
 ---
 
-### AI_INDEX.md — the map
+## AI_INDEX.md — give Claude a map
 
-**The problem without it:**
+Every new session, you spend 10 minutes re-orienting Claude. "The auth logic is in... the routes are in... the models are..." Claude asks questions it shouldn't have to ask. It reads the wrong files. It explains code it hasn't even opened.
 
-Every new session, you spend 10–15 minutes re-orienting Claude. "The auth logic is in... the API routes are in... the database models are..." Claude asks questions it shouldn't need to ask. It reads irrelevant files. It confidently explains code it hasn't actually opened.
+What if Claude read one file first that just tells it where everything is?
 
-**What it does:**
-
-One file in your repo root. Claude reads it first, before anything else. It maps each domain: where it lives, what to search for, what tests cover it, and — critically — how it connects to other domains.
-
-It's not a design document. It doesn't explain how the code works. It's airport signage: Gate 12 is this way. That's all.
+That's AI_INDEX.md. You put it in your repo root. Claude reads it before anything else. It's not a design doc — it doesn't explain how your code works. It's airport signs. Gate 12 is this way. Just that.
 
 ```markdown
-# AI_INDEX.md
-
-## How to use this file
-- Navigation only. Not source of truth.
-- Read actual source files before making any claim.
-
 ### Rule evaluation
 - Entry: src/rule_evaluator.py
 - Search: evaluate_rule, ActionExecutor
@@ -54,23 +34,21 @@ It's not a design document. It doesn't explain how the code works. It's airport 
   - API layer — via POST /api/evaluate (src/api/routes.py)
 ```
 
-The `Connects to` section is what makes cross-feature work possible. When you trace the impact of a change, these connections tell Claude which domains to check next — without reading every file in between.
+The `Connects to` part matters a lot. When you're tracing what breaks after a change, these connections tell Claude which other domains to check — without reading every file in between.
 
-**Keep it healthy:** under 250 lines, 4–8 lines per domain, file paths and grep terms only. The moment it starts containing prose explanations or words like "usually" and "roughly" — rewrite those entries as pointers. Claude will start reasoning from the index instead of the source, and that's exactly where the confident wrong answers come from.
+One thing to keep in mind: the moment this file starts explaining *how* things work instead of *where* they are, Claude will start reasoning from the index instead of reading the actual code. That's where the confident wrong answers come from. Keep it under 250 lines, file paths and keywords only.
 
 See [`templates/AI_INDEX_TEMPLATE.md`](templates/AI_INDEX_TEMPLATE.md).
 
 ---
 
-### LSP — required install
+## LSP — not grep
 
-**The problem without it:**
+You ask Claude to find every place a function is called. It uses grep. Sounds fine.
 
-You ask Claude to find every place a function is used. Claude uses grep. Grep is string matching — it finds the function name anywhere it appears: comments, unrelated variable names, files from a completely different part of the codebase. You get 40 results. 15 are noise. Claude reads them all. Half your token budget is gone before any real work starts.
+But grep is string matching — it finds those letters anywhere they appear. Comments. Variable names that happen to contain the string. Files from a completely unrelated part of the codebase. You ask for callers of `authenticate()` and get 40 results. 15 are noise. Claude reads all 40. Half your token budget gone before you've made a single change.
 
-**What it does:**
-
-LSP (Language Server Protocol) asks the language's type checker directly. It understands what the symbol *is*, not just where the string appears. The result is semantically precise: these exact call sites, nothing else.
+LSP asks the language's type checker instead. It knows what the symbol actually *is*, not just where the letters appear. Same query, 6 exact results. The real callers, nothing else.
 
 | | grep | LSP findReferences |
 |---|---|---|
@@ -92,43 +70,33 @@ go install golang.org/x/tools/gopls@latest            # Go
 
 ---
 
-### The two skills
+## The two skills
 
-**`/investigate-module`**
+**`/investigate-module`** — before Claude answers, make it read first
 
-**The problem without it:**
+You ask Claude about a module. It gives you a detailed explanation. Sounds right. But half of it is wrong — Claude was filling gaps from training data instead of reading your actual code. By the time you find out, you've already built on top of the wrong assumption.
 
-You ask Claude about a module. It gives you a detailed explanation. It sounds completely right. Half of it is wrong — Claude filled the gaps from training data instead of reading your actual code. By the time you discover this, you've already built on top of the wrong assumption.
+`/investigate-module` forces Claude to ground its answer before saying anything. It reads AI_INDEX to find the right domain → uses grep/LSP to locate the exact file and function → reads only the relevant lines → tells you exactly what it read so you can verify. If it can't find something, it says uncertain. It doesn't guess.
 
-**What it does:**
-
-Forces grounded investigation before any answer. Reads AI_INDEX to find the domain → uses grep/LSP to locate the exact file and function → reads only the relevant section (line ranges, not whole files) → names exactly what it read so you can verify. If it can't find something, it says uncertain instead of guessing.
-
-Use it before making any claim about a module you haven't looked at in this session.
+Use it whenever you're asking about a module you haven't looked at in this session.
 
 ---
 
-**`/trace-impact`**
+**`/trace-impact`** — before you change anything, find out what breaks
 
-**The problem without it:**
+You change a function. Tests pass. You ship. Then you find out three services called that function, a frontend type depended on its return shape, and a test mock was hardcoded to its old behavior. None of this was obvious. Claude didn't warn you because you didn't ask, and Claude doesn't know what it doesn't know.
 
-You change a function. You test it. It works. You ship it. Then you find out three other services called that function, a frontend type depended on its return shape, and a test mock was hardcoded to its old behavior. None of this was obvious. Claude didn't warn you because you didn't ask, and Claude doesn't know what it doesn't know.
+`/trace-impact` maps every affected place before you touch anything. It works like a breadth-first search through your codebase:
 
-**What it does:**
+- Start at the symbol you're changing
+- Level 1: everything that directly calls it (LSP findReferences — semantic, not grep)
+- Level 2: everything that calls those callers
+- Cross-domain: follows AI_INDEX `Connects to` to catch paths that jump module boundaries
+- Tests: finds every test that covers anything in the affected set
 
-Before you touch anything, maps every place that will be affected. It uses a breadth-first search through your codebase:
+Why breadth-first? Because you want to see all the direct impact first, before going deeper. It's systematic — nothing slips through because you happened to trace one branch before another. Stops at API boundaries so it doesn't spiral forever.
 
-1. **Level 0** — the symbol you're changing
-2. **Level 1** — everything that directly calls it (via LSP findReferences — exact, not grep)
-3. **Level 2** — everything that calls those callers
-4. **Cross-domain** — follows AI_INDEX `Connects to` entries to catch paths that cross module boundaries
-5. **Tests** — finds all tests that cover anything in the affected set
-
-Why breadth-first? Because you want to see all the obvious direct impact before diving into second-order effects. It's systematic: nothing slips through because you happened to trace one path before another.
-
-Stops at external API boundaries and domain edges — it doesn't follow every chain to infinity, just far enough to catch real breakage.
-
-Result: a list of what must change, what might need updating, and what tests to verify — before you write a single line.
+Result: a list of what must change, what might need updating, and which tests to run — before you write a single line.
 
 Use it before every non-trivial change.
 
@@ -140,10 +108,10 @@ Use it before every non-trivial change.
 Task: fix a bug in rule_evaluator.py
 
 1. /trace-impact rule_evaluator.py:evaluate_rule
-   → you now know the full blast radius before touching anything
+   → know the full blast radius before touching anything
 
 2. /investigate-module for any part you need to understand
-   → grounded facts, not guesses, with sources named
+   → grounded facts with sources, not guesses
 
 3. Make the change
    → you already know what else needs updating
@@ -151,15 +119,13 @@ Task: fix a bug in rule_evaluator.py
 
 ---
 
-## CLAUDE.md configuration
-
-### The problem: "be careful" doesn't work
+## CLAUDE.md — why "be careful" doesn't work
 
 You add a rule to CLAUDE.md: "Always verify against source code before answering." Claude ignores it two messages later. You bold it. Still ignored. You move it to the top. Better, but still inconsistent.
 
-This isn't Claude being difficult. Anthropic wraps your CLAUDE.md with: *"this context may or may not be relevant."* Under context pressure, markdown headings get deprioritized. The rules are there, but they're losing the competition for Claude's attention.
+It's not Claude ignoring you on purpose. Anthropic wraps your CLAUDE.md with: *"this context may or may not be relevant."* Under context pressure, markdown headings get deprioritized. Your rules are there — they're just losing the competition.
 
-**What works:** XML tags. They're a high-priority structure in Claude's training and survive context pressure far better than any markdown formatting.
+XML tags survive context pressure better than any markdown formatting. Use those instead:
 
 ```xml
 <investigate_before_answering>
@@ -173,15 +139,9 @@ Read each file once. No redundant reads.
 </investigate_before_answering>
 ```
 
-### The instruction budget
+Also: Claude has roughly 150–200 instruction slots total. The system prompt uses ~50. Every bullet in your CLAUDE.md is one slot. When it fills up, all rules degrade simultaneously — not just the ones at the bottom. Keep it under 200 lines.
 
-Claude has roughly 150–200 instruction slots total. The system prompt uses ~50. Every bullet point in your CLAUDE.md is one slot. When the budget fills up, all rules degrade simultaneously — not just the ones at the end.
-
-Keep CLAUDE.md under 200 lines. Put the highest-ROI content first: specific pitfalls that prevent real bugs, not general guidance.
-
-### Hard rules belong in settings.json
-
-CLAUDE.md is advisory. Under enough pressure, Claude can override it. `settings.json` deny rules cannot be overridden:
+And if you catch yourself writing "NEVER do X" in CLAUDE.md — move it to `settings.json` deny. CLAUDE.md can be overridden under pressure. `settings.json` deny cannot:
 
 ```json
 {
@@ -194,21 +154,17 @@ CLAUDE.md is advisory. Under enough pressure, Claude can override it. `settings.
 }
 ```
 
-If you're writing `NEVER do X` in CLAUDE.md, move it to `settings.json` deny instead.
-
 ---
 
-## Autonomy rules
+## Autonomy — the one rule
 
-**The problem:**
+Claude asks "should I proceed?" before editing a file. Before running a test. Before grep. You spend half your time confirming things that obviously don't need confirming.
 
-Claude asks "should I proceed?" before editing a file. Before running a test. Before grep. You spend half your time confirming things that don't need confirming. But if you say "just do everything without asking," Claude will also push to remote, publish packages, and delete things without asking.
+But if you say "just do everything without asking," Claude will also push to remote and delete files without asking.
 
-**The rule:** Judge by reversibility, not by action type.
+The only rule that actually works: **judge by reversibility, not by action type.**
 
-**Never ask before:** editing files, running tests, grep, installing packages, git add, git commit on a feature branch. All reversible — if something goes wrong, you undo it.
-
-**Always ask before:** push to remote, publish packages, delete files, force operations, sending messages externally. Irreversible, or visible to people outside this session.
+Editing files, running tests, grep, git add, git commit on a feature branch — all reversible, never ask. Push to remote, publish packages, deleting files, force operations, sending messages externally — irreversible or visible to others, always ask.
 
 On a feature branch, everything up to and including commit is reversible. Push is the line.
 
@@ -216,14 +172,11 @@ On a feature branch, everything up to and including commit is reversible. Push i
 
 ## Context management
 
-**The problem:**
+A session starts sharp. An hour in, Claude starts making mistakes it wouldn't have made at the start — forgetting earlier constraints, giving vaguer answers. The context window is filling up, and performance degrades as it fills.
 
-A session starts sharp. An hour in, Claude is making mistakes it wouldn't have made at the start — forgetting earlier constraints, skipping details, giving vaguer answers. The context window is filling up, and performance degrades as it fills.
-
-Key practices:
-- **`/clear` between unrelated tasks** — context residue from one task degrades the next
-- **`/compact focus on X`** — compact with a hint, not blindly; the relevant parts are preserved
-- **Write state to `PLAN.md`** — task progress survives a `/clear`; conversation history doesn't
+- **`/clear` between unrelated tasks** — the previous task's file reads and reasoning pollute the next one
+- **`/compact focus on X`** — compact with a hint so the relevant parts survive, not everything equally
+- **Write state to `PLAN.md`** — progress survives a `/clear`; conversation history doesn't
 - **One major task per session** — each fresh start is full performance
 
 Full guide: [`docs/context-management.md`](docs/context-management.md)
