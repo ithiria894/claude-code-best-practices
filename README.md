@@ -38,6 +38,14 @@ The `Connects to` part matters a lot. When you're tracing what breaks after a ch
 
 One thing to keep in mind: the moment this file starts explaining *how* things work instead of *where* they are, Claude will start reasoning from the index instead of reading the actual code. That's where the confident wrong answers come from. Keep it under 250 lines, file paths and keywords only.
 
+**Generating it:** You don't have to write this by hand. The repo includes a script that scans your imports and directory structure and outputs the whole thing:
+
+```bash
+node scripts/generate-ai-index.mjs src tests > AI_INDEX.md
+```
+
+It finds entry files, extracts exported symbols as search terms, and maps cross-domain connections from actual imports. Gets you 80% of the way there — then you review and add anything it missed (like HTTP endpoints or frontend-backend connections).
+
 See [`templates/AI_INDEX_TEMPLATE.md`](templates/AI_INDEX_TEMPLATE.md).
 
 ---
@@ -70,7 +78,21 @@ go install golang.org/x/tools/gopls@latest            # Go
 
 ---
 
-## The two skills
+## The three skills
+
+**`/generate-index`** — build the map
+
+You can write AI_INDEX.md by hand, but for any repo with more than a handful of files, let the script do the heavy lifting. It scans your source directory, finds every import between files, and outputs the routing manifest with all the `Connects to` edges already filled in.
+
+```bash
+node scripts/generate-ai-index.mjs src tests > AI_INDEX.md
+```
+
+Then Claude reviews the output — adds HTTP endpoints, merges domains that should be together, trims noise. Script does 80% deterministically (zero tokens). Claude refines the last 20%.
+
+Run it once when you set up a new repo, then again whenever your directory structure changes.
+
+---
 
 **`/investigate-module`** — before Claude answers, make it read first
 
@@ -105,16 +127,22 @@ Use it before every non-trivial change.
 ### How they work together
 
 ```
-Task: fix a bug in rule_evaluator.py
+New repo:
+  /generate-index → builds the map with all connections
 
-1. /trace-impact rule_evaluator.py:evaluate_rule
-   → know the full blast radius before touching anything
+Fix a bug:
+  1. /trace-impact rule_evaluator.py:evaluate_rule
+     → know the full blast radius before touching anything
+  2. /investigate-module for any part you need to understand
+     → grounded facts with sources, not guesses
+  3. Make the change
+     → you already know what else needs updating
 
-2. /investigate-module for any part you need to understand
-   → grounded facts with sources, not guesses
-
-3. Make the change
-   → you already know what else needs updating
+Add a feature:
+  1. /trace-impact on each touch point → map the blast radius first
+  2. /investigate-module for domains you don't understand
+  3. Implement the feature
+  4. /generate-index if you added new modules or connections
 ```
 
 ---
@@ -216,6 +244,7 @@ Install only what I confirm. Do not install anything before asking.
 
 | File | What it is |
 |---|---|
+| [`scripts/generate-ai-index.mjs`](scripts/generate-ai-index.mjs) | Deterministic AI_INDEX generator — scans imports, outputs routing manifest |
 | [`templates/AI_INDEX_TEMPLATE.md`](templates/AI_INDEX_TEMPLATE.md) | Full AI_INDEX format with Connects to |
 | [`templates/MEMORY_INDEX_TEMPLATE.md`](templates/MEMORY_INDEX_TEMPLATE.md) | Memory file structure and frontmatter |
 | [`CLAUDE.md`](CLAUDE.md) | CLAUDE.md template with XML verification rules |
