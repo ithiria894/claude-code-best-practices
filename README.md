@@ -200,24 +200,22 @@ Full guide: [`docs/context-management.md`](docs/context-management.md)
 Copy this prompt into Claude Code in your project:
 
 ```
-Set up claude-code-best-practices in this repo.
-
 Read these files from https://github.com/ithiria894/claude-code-best-practices:
-- README.md (understand the system)
+- README.md
 - .claude/skills/investigate-module/SKILL.md
 - .claude/skills/trace-impact/SKILL.md
 - templates/AI_INDEX_TEMPLATE.md
 - CLAUDE.md
 
-Then:
-1. Install both skills into this project's .claude/skills/
-2. Enable LSP in .claude/settings.json (add ENABLE_LSP_TOOL: "1")
-3. Install the language server for this project's stack
-4. Write an AI_INDEX.md for this codebase using the template format — routing manifest only, no explanations
-5. Add the <investigate_before_answering> XML block to this project's CLAUDE.md
-6. Explain what you've set up and how to use /investigate-module and /trace-impact
+Then explain each component to me in plain language:
+1. What /investigate-module does and when to use it
+2. What /trace-impact does and when to use it
+3. What AI_INDEX.md is and what I need to write for this repo
+4. What the <investigate_before_answering> rule does in CLAUDE.md
+5. What enabling LSP means and what to install for this project's stack
 
-Do not implement anything else. Just set up the navigation system and explain it.
+After explaining, ask me which ones I want to set up. Install only what I confirm.
+Do not install anything before asking.
 ```
 
 ---
