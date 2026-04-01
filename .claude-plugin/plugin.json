@@ -1,7 +1,7 @@
 {
   "name": "codebase-navigator",
   "version": "0.1.0",
-  "description": "Turn your repo into a graph. 6 skills: generate-graph (build the map), investigate-module (verification-first reading), trace-impact (BFS traversal), sync-graph (keep it fresh), debug (locate → root cause → Codex pattern sweep → fix), new-feature (find pattern → trace impact → implement).",
+  "description": "Turn your repo into a graph. 4 skills: generate-graph (build the map), debug (locate → root cause → pattern sweep → fix), new-feature (find pattern → trace impact → implement), sync-graph (keep it fresh).",
   "author": {
     "name": "ithiria894",
     "url": "https://github.com/ithiria894"
