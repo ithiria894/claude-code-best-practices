@@ -1,7 +1,7 @@
 {
   "name": "codebase-navigator",
   "version": "0.1.0",
-  "description": "Turn your repo into a graph. 4 skills: generate-graph (build the map), debug (locate → root cause → pattern sweep → fix), new-feature (find pattern → trace impact → implement), sync-graph (keep it fresh).",
+  "description": "Not another code graph engine. A lightweight navigation workflow for AI coding agents.",
   "author": {
     "name": "ithiria894",
     "url": "https://github.com/ithiria894"
@@ -10,5 +10,10 @@
   "repository": "https://github.com/ithiria894/claude-code-best-practices",
   "license": "MIT",
   "keywords": ["navigation", "graph", "bfs", "lsp", "codebase", "ai-index"],
-  "skills": "./skills/"
+  "skills": [
+    "./.claude/skills/debug",
+    "./.claude/skills/generate-graph",
+    "./.claude/skills/sync-graph",
+    "./.claude/skills/new-feature"
+  ]
 }
