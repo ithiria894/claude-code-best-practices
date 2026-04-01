@@ -4,15 +4,28 @@ description: Debug a bug from report to fix. Locates the layer, finds root cause
 disable-model-invocation: true
 ---
 
+> **[codebase-navigator plugin — debug skill]**
+
 # Debug
 
 Find the layer where the data goes wrong, fix it there, then check if the same pattern exists elsewhere.
 
 ---
 
-## Phase 0 — Understand the report
+## Phase 0 — Understand the report (EVIDENCE FIRST)
 
-Extract from the bug report:
+### If an exception/error/stack trace is provided:
+
+**Read the exception BEFORE the reporter's explanation.**
+
+1. Extract EVERY field from the exception parameters — table, constraint, column values (role, type, status), IDs, the actual SQL/operation
+2. State what the evidence says using ONLY the exception data
+3. THEN read the reporter's explanation. Check: does every field support their theory?
+4. If ANY field contradicts the narrative → investigate the contradiction FIRST
+
+**Why:** AI agents consistently accept the reporter's framing and use the exception to confirm it, rather than reading it independently. When the reporter's theory contradicts any field in the actual error data, the AI misses it because it's already committed to the narrative. A human engineer reads the error first and catches contradictions immediately. This rule forces the same behavior.
+
+### Extract from the bug report:
 - What's broken? (wrong data, crash, 500, missing field, wrong behavior)
 - Any entry point? (API endpoint, error message, stack trace, log link)
 - Steps to reproduce (if provided)

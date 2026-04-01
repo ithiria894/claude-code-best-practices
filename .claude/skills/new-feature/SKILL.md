@@ -4,6 +4,8 @@ description: Plan and implement a new feature. Finds existing patterns to copy, 
 disable-model-invocation: true
 ---
 
+> **[codebase-navigator plugin — new-feature skill]**
+
 # New Feature
 
 Find an existing pattern, copy it across all layers, verify nothing breaks.
@@ -19,19 +21,25 @@ What exactly needs to be added? Extract:
 
 ---
 
-## Phase 1 — Find the pattern to copy
+## Phase 1 — Find the pattern (or design from scratch)
 
 ### Step 1: Read AI_INDEX.md
 
-Find the domain of the most similar existing feature. Note:
+Search for a similar existing feature. Note:
 - Its entry file
 - Its "Connects to" edges (which other domains it touches)
 - Its test files
-- `Docs:` field — if the domain has linked documentation, **read it first**. Domain docs contain business logic, caveats, data lifecycle rules, and design decisions you need to know before implementing.
+- `Docs:` field — if the domain has linked documentation, **read it first**.
 
-### Step 2: Trace one existing feature end-to-end
+### Step 1b: Is there an existing pattern to copy?
 
-Use `/investigate-module` on the similar feature. Trace it through every layer:
+**If YES** (e.g., "add a new scanner category" when 8 categories already exist) → go to Step 2.
+
+**If NO** (e.g., "add real-time notifications" when the codebase has never done this) → go to Step 2b.
+
+### Step 2: Copy an existing pattern end-to-end
+
+Trace the similar feature through every layer:
 
 ```
 DB model / migration
@@ -48,6 +56,16 @@ For each layer, note:
 - What the data shape looks like
 
 This is your template. The new feature should follow the same pattern.
+
+### Step 2b: Design from scratch (no existing pattern)
+
+When the feature is genuinely new (no similar feature exists in the codebase):
+
+1. **Read architectural docs** — check `Docs:` links in AI_INDEX.md for conventions, naming patterns, layer responsibilities
+2. **Identify which domains the new feature will connect to** — use AI_INDEX.md edges to understand where it fits in the graph
+3. **Find the closest CONCEPT** (not identical feature) — e.g., "real-time notifications" has no exact match, but "background jobs" or "event emitters" might show how async patterns work in this codebase
+4. **Propose a structure** — which layers need new files? Which existing files need modification? Where does it plug into the existing graph?
+5. **Ask the user** — for brand new patterns, confirm the approach before implementing. Don't assume.
 
 ---
 

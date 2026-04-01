@@ -4,6 +4,8 @@ description: Generate or update the codebase graph (AI_INDEX.md). Script builds 
 disable-model-invocation: true
 ---
 
+> **[codebase-navigator plugin — generate-graph skill]**
+
 # Generate Graph
 
 Generate or update the repo's codebase graph (AI_INDEX.md). Two-phase process: script builds the skeleton, Claude fills the gaps.

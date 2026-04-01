@@ -4,6 +4,8 @@ description: Update AI_INDEX.md after a feature or bug fix, while Claude still h
 disable-model-invocation: true
 ---
 
+> **[codebase-navigator plugin — sync-graph skill]**
+
 # Sync Graph
 
 Update AI_INDEX.md to reflect what just changed in this session. Run this *before* `/clear` — Claude still knows which files were touched and why.
