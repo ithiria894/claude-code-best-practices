@@ -1,7 +1,6 @@
 ---
 name: new-feature
 description: Plan and implement a new feature. Finds existing patterns to copy, traces impact on all touch points, implements across layers, then syncs the graph. Use when adding a new feature, category, endpoint, or capability.
-disable-model-invocation: true
 ---
 
 > **[codebase-navigator plugin — new-feature skill]**

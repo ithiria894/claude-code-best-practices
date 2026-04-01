@@ -1,7 +1,6 @@
 ---
 name: sync-graph
 description: Update AI_INDEX.md after a feature or bug fix, while Claude still has session memory of what changed. Run immediately after completing work — before /clear.
-disable-model-invocation: true
 ---
 
 > **[codebase-navigator plugin — sync-graph skill]**

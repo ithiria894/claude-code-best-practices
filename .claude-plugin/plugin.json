@@ -1,6 +1,6 @@
 {
   "name": "codebase-navigator",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Not another code graph engine. A lightweight navigation workflow for AI coding agents.",
   "author": {
     "name": "ithiria894",

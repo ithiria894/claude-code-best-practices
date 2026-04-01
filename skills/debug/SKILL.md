@@ -1,7 +1,6 @@
 ---
 name: debug
 description: Debug a bug from report to fix. Locates the layer, finds root cause, sweeps for same pattern elsewhere, then fixes. Use when given a bug report, error message, or "X is broken".
-disable-model-invocation: true
 ---
 
 > **[codebase-navigator plugin — debug skill]**
