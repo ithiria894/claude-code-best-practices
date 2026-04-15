@@ -6,18 +6,52 @@
 
 ## In Plain English
 
-When AI fails on a real repo, it is usually not because it is too dumb to read code.
+When AI misses on a real repo, it is usually not because it is too dumb to read code.
 
-It is more like this:
+It is because you are forcing it into a bad tradeoff.
 
-You send a technician into a huge building and say, "Fix the leak."
+## The Dilemma
 
-The technician is smart. The problem is that nobody gave them:
+Here is the dilemma almost every Claude Code user runs into:
 
-- the floor plan
-- the shutoff-valve map
-- the list of rooms that share the same pipe
-- the note that says "if you touch this line, also check the pressure sensor downstairs"
+### Option A: Let Claude read everything
+
+It greps the whole repo, opens 20 files, reads thousands of lines, and tries to be thorough.
+
+That sounds safe, but on a real repo it gets expensive fast:
+
+- token burn goes through the roof
+- context gets noisy
+- the model starts forgetting what it read five minutes ago
+
+### Option B: Let Claude read what it thinks is relevant
+
+Now it moves faster.
+
+It opens 3 or 4 files, gives you a confident answer, and starts coding.
+
+That sounds efficient, but this is how you get the dangerous kind of bug:
+
+- it fixes one obvious path
+- it misses the second path it never knew existed
+- you only find out later that the change was incomplete
+
+Both options are bad.
+
+- read too much and you waste time and tokens
+- read too little and you miss things
+
+The third option is to give Claude a map.
+
+Think of your codebase like Tokyo's subway system.
+
+Without a map, you can still get somewhere, but you spend the whole time wandering between lines and hoping you guessed the right transfer.
+
+With a map, you glance once, see the route, and move.
+
+The map does not stop exploration.
+
+It just stops dumb exploration.
 
 That is what `AI Index` is for.
 
