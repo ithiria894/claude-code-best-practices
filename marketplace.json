@@ -8,7 +8,7 @@
   "plugins": [
     {
       "name": "codebase-navigator",
-      "description": "AI-maintained repository graph for change-complete navigation. Includes ai-index, generate-graph, sync-graph, debug, and new-feature skills.",
+      "description": "AI-maintained repository graph for change-complete navigation. Includes ai-index, use-ai-index, generate-graph, sync-graph, debug, and new-feature skills.",
       "version": "0.1.0",
       "source": {
         "type": "git",
