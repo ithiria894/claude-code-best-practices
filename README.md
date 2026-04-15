@@ -116,6 +116,22 @@ That keeps the graph lighter, and it avoids one of the most common failure modes
 - the AI trusted the prose
 - the edit started from the wrong mental model
 
+## The Whole Point
+
+This is the whole design in one place:
+
+- AI Index stays navigation-first
+- code stays the single source of truth
+- only hand-write the small set of rules AI cannot reliably infer from code
+- after meaningful code changes, sync the graph
+- pattern audit or full sweep still exists as a backup when you need broader confidence
+
+One sentence version:
+
+AI Index is not another documentation system.
+
+It is a repo traversal system for AI.
+
 ## The Fastest Way To Understand The Difference
 
 Think about these three tools:

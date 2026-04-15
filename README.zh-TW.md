@@ -138,6 +138,22 @@ AI Index 只做導航：
 - graph 可以輕好多，唔使變成另一套會 stale 嘅 documentation
 - AI 唔會咁容易畀舊 prose 錨死喺錯誤理解上面
 
+## 呢個先係成件事嘅重點
+
+其實成套設計濃縮返，就係下面幾句：
+
+- AI Index 永遠保持 `navigation-first`
+- code 永遠係唯一嘅 source of truth
+- 只手寫 AI 無法穩定由 code 推到嘅少量規則
+- 改完有意義嘅 code 之後，要同步更新 graph
+- `pattern audit` / `full sweep` 仍然要留返做補充手段
+
+一句講晒：
+
+AI Index 唔係另一套 documentation system。
+
+佢係一個畀 AI 用嘅 repo traversal system。
+
 ## 最容易懂的比較方式
 
 你可以把這件事想成三種工具。
