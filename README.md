@@ -28,6 +28,14 @@ That sounds safe, but on a real repo it gets expensive fast:
 
 Now it moves faster.
 
+## Key Playbooks
+
+| File | 內容 |
+|------|------|
+| `testing-coverage-and-e2e-playbook.zh-HK.md` | 所有 code work 嘅 testing coverage 原則：可以 unit test 就要寫；唔適合自動化但必驗嘅 path 要寫 AI-Index E2E playbook |
+| `logfire-mcp-playbook.zh-HK.md` | 呢部機修 Logfire MCP `Auth required` / `Needs authentication` / localhost callback refused 嘅完整 playbook；重點係 browser login 同本機 MCP token store 係兩回事 |
+| `BUG_FIX_TRACKER.md` | Bug/fix diary：每日記錄原始問題句子、相關 links、root cause、fix PRs 嘅 purpose、deploy / QA verification；GitHub 可 query 嘅 current PR state 唔重複記 |
+
 It opens 3 or 4 files, gives you a confident answer, and starts coding.
 
 That sounds efficient, but this is how you get the dangerous kind of bug:
