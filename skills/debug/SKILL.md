@@ -9,6 +9,64 @@ Find the layer where the data goes wrong, fix it there, then check if the same p
 
 ---
 
+## The Holy Trinity — Evidence Before Fix
+
+Every bug investigation requires evidence from ALL THREE sources before declaring root cause. Missing any one = incomplete.
+
+```
+    Observability (logs/traces/frontend)
+         ▲
+        / \
+       /   \
+      /     \
+     ▼       ▼
+ Database ◄► Source Code
+```
+
+| Source | What it tells you |
+|--------|------------------|
+| **Observability** | What actually happened at runtime — which functions ran, what data they received, what they produced |
+| **Database** | What was persisted — the ground truth of what the system stored |
+| **Source Code** | What the code is SUPPOSED to do — only trustworthy AFTER you know what actually happened |
+
+### Debugging order — non-negotiable
+
+```
+1. Observability (traces, logs, or reproduce in frontend → capture network)
+   ↓  find the actual request, trace the data flow
+2. Database records
+   ↓  confirm what was persisted, match to traces
+3. Source code
+   ↓  NOW read code with context of what actually happened
+4. Root cause (where actual data diverged from expected)
+5. Fix — or declare "not a bug" if the system worked correctly
+```
+
+**NEVER start with code reading.** Reading code first creates a hypothesis that biases all subsequent investigation. You unconsciously seek evidence that confirms it. Start with runtime data, form understanding from evidence, then verify against code.
+
+### Anti-pattern: "code-reading fix"
+
+1. PM reports bug X
+2. You read code, spot something suspicious
+3. You fix it and claim it resolves bug X
+4. You never traced the PM's actual session/request through logs and DB
+
+The fix might be valid for a DIFFERENT bug. Without an end-to-end trace of the reported case, you don't know.
+
+### Presenting findings
+
+When explaining a bug (or non-bug) to PM/team:
+
+1. **Filtered trace link** — filter to key spans only, include time range
+2. **Key spans table** — time, span name, what to click, what they'll see inside
+3. **DB records** — session/action rows matching the trace
+4. **Data flow diagram** — ASCII with actual data values at each step
+5. **One-sentence root cause**
+
+The recipient must be able to independently verify every claim.
+
+---
+
 ## Phase 0 — Understand the report
 
 Extract from the bug report:
